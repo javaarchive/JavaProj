@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="WINDOWS-1252" standalone="no"?>
+<jardesc>
+    <jar path="CommandLineToolbox/compresser_bit.jar"/>
+    <options buildIfNeeded="true" compress="true" descriptionLocation="/CommandLineToolbox/jarbuild.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+    <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
+    <selectedProjects/>
+    <manifest generateManifest="true" mainClassHandleIdentifier="=CommandLineToolbox/src&lt;{BitCompresser.java[BitCompresser" manifestLocation="" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
+        <sealing sealJar="false">
+            <packagesToSeal/>
+            <packagesToUnSeal/>
+        </sealing>
+    </manifest>
+    <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
+        <file path="/CommandLineToolbox/image.jpg.comp"/>
+        <file path="/CommandLineToolbox/test.in"/>
+        <javaElement handleIdentifier="=CommandLineToolbox/src"/>
+        <file path="/CommandLineToolbox/test.in.comp"/>
+        <file path="/CommandLineToolbox/.classpath"/>
+        <file path="/CommandLineToolbox/.project"/>
+    </selectedElements>
+</jardesc>

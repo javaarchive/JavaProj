@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<jardesc>
+    <jar path="C:/Raymond/BeetSearch.jar"/>
+    <options buildIfNeeded="true" compress="true" descriptionLocation="/Beet-Search-Engine/buildprod.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="true" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+    <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
+    <selectedProjects/>
+    <manifest generateManifest="true" mainClassHandleIdentifier="=Beet-Search-Engine/src&lt;{BeetLauncher.java[BeetLauncher" manifestLocation="" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
+        <sealing sealJar="false">
+            <packagesToSeal/>
+            <packagesToUnSeal/>
+        </sealing>
+    </manifest>
+    <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
+        <file path="/Beet-Search-Engine/commonwords.txt"/>
+        <file path="/Beet-Search-Engine/.project"/>
+        <file path="/Beet-Search-Engine/toscrape.txt"/>
+        <javaElement handleIdentifier="=Beet-Search-Engine/src"/>
+        <file path="/Beet-Search-Engine/commonwords2.txt"/>
+        <file path="/Beet-Search-Engine/.classpath"/>
+    </selectedElements>
+</jardesc>

@@ -1,0 +1,9 @@
+
+public class cmdSearchClient {
+	public static final String database = "";
+	public static void main(String[] args) {
+		
+
+	}
+
+}

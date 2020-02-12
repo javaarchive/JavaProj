@@ -1,0 +1,18 @@
+
+public class Webpage {
+	public String url;
+	public String title;
+	String desc;
+	int freq;
+	String keywords;
+	
+	public Webpage() {
+		// TODO Auto-generated constructor stub
+	}
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+
+	}
+
+}

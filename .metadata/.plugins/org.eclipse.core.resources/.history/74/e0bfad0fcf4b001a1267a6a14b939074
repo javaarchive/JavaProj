@@ -1,0 +1,127 @@
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+public class LinkTree {
+	public static Connection connect() {
+	    Connection conn = null;
+	    try {
+	        // db parameters
+	        String url = "jdbc:sqlite:C:/Raymond/webgraph.db";
+	        // create a connection to the database
+	        conn = DriverManager.getConnection(url);
+	        
+	        System.out.println("Connection to SQLite has been established.");
+	        
+	    } catch (SQLException e) {
+	        System.out.println(e.getMessage());
+	    } finally {
+	        try {
+	            if (conn != null) {
+	            	
+	                DatabaseMetaData meta = conn.getMetaData();
+	                System.out.println("The driver name is " + meta.getDriverName());
+	                System.out.println("A new database has been created.");
+	                
+	                return conn;
+	            }
+	        } catch (SQLException ex) {
+	            System.out.println(ex.getMessage());
+	        }
+	    }
+	    return conn;
+	}
+	public static void main(String[] args) throws SQLException{
+		// TODO Auto-generated method stub
+		Connection conn = connect();
+		try {
+			Statement stm = conn.createStatement();
+			String sql = "CREATE TABLE IF NOT EXISTS webgraph (\n"
+	                + "    url1 text PRIMARY KEY,\n"
+	                + "    url2 text NOT NULL,\n"
+	                + "    "
+	                + ");";
+		}catch(Exception ex) {
+			System.out.println("Unable to proceed table creation "+ex.getLocalizedMessage());
+		}
+		String[] initialQuery = {"http://google.com","http://wikipedia.org"}; 
+		Queue<IndexRequest> requests = new LinkedList<>();
+		for(int i = 0; i < initialQuery.length; i ++) {
+			requests.add(new IndexRequest("rootNode",initialQuery[i],0));
+		}
+		int MAX_DEPTH = 4;
+		Runtime.getRuntime().addShutdownHook(new Thread() 
+	    { 
+	      public void run() 
+	      { 
+	        try {
+	        	System.out.println("Got close...shutting down database");
+				conn.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	      } 
+	    }); 
+		while(!requests.isEmpty()) {
+			IndexRequest req = requests.poll();
+			if(req.depth > MAX_DEPTH) {
+				continue;
+			}
+			try {
+				System.out.println("Scraping "+req.url+" at depth "+req.depth);
+				Document doc = Jsoup.connect(req.url).userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36").get();
+				String domain = req.url.substring(0, req.url.lastIndexOf('/'));
+				String sql = "INSERT INTO warehouses(url1,url2) VALUES(?,?)";
+				 
+		        try (Connection conn = this.connect();
+		                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+		            pstmt.setString(1, name);
+		            pstmt.setDouble(2, capacity);
+		            pstmt.executeUpdate();
+		        } catch (SQLException e) {
+		            System.out.println(e.getMessage());
+		        }
+				for(Element e: doc.getElementsByTag("a")) {
+					try{
+						String newURL = e.attr("href");
+						if(newURL.startsWith("/")) {
+							newURL =  domain + newURL;
+						}
+						if(!newURL.equals("")) {
+						requests.add(new IndexRequest(req.url,newURL, req.depth + 1));
+						}
+					}catch(Exception ex) {
+						System.out.println("URL Extraction failed to "+ex.getLocalizedMessage());
+					}
+				}
+			}catch(Exception ex) {
+				System.out.println("Scraping for "+req.url+" failed to "+ex.getLocalizedMessage());
+			}
+		}
+		conn.close();
+	}
+
+}
+class IndexRequest{
+	int depth = 0;
+	String url; 
+	String origin;
+	public IndexRequest(String origin, String url, int depth) {
+		this.origin = origin;
+		this.url = url;
+		this.depth = depth;
+	}
+	public String toString() {
+		return this.depth+": "+this.url;
+	}
+}

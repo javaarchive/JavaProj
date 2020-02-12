@@ -1,0 +1,57 @@
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
+import java.io.*;
+import java.util.*;
+public class WebScraper {
+	public final static String database = "C:\\Raymond\\searchDB\\keywords\\"; // No extra \\
+	public static void addToDB(String url, List<String> keywords) {
+		for(String keyword:keywords) {
+			File f = new File(database + keyword + ".keyword");
+			if(!f.exists()) {
+				if(f.isDirectory()) {
+					continue;
+				}
+				WFile wf = new WFile(database + keyword + ".keyword");
+				wf.write(url);
+				wf.close();
+			}else {
+				List<String> urls = (new TextFile(database + keyword + ".keyword")).getLines();
+				urls.sort(null);
+				HashSet<String> hs = new HashSet<String>(urls);
+				hs.add(url);
+				WFile wf = new WFile(database + keyword + ".keyword");
+				for(String URL:hs) {
+					wf.write(URL);
+				}
+				wf.close();
+			}
+		}
+	}
+	public static void main(String[] args) throws IOException {
+		// TODO Auto-generated method stub
+		TextFile f = new TextFile("toscrape.txt");
+		HashSet<String> commonwords = new HashSet<>((new TextFile("commonwords.txt").getLines()));
+		while(true) {
+			String url = f.readLine();
+			if(url == null) {
+				break;
+			}
+			Document doc = Jsoup.connect(url).get();
+			List<String> keywords = new ArrayList<>();
+			String title = doc.title();
+			System.out.println(title);
+			for(String s: NLP.removePunc(title).split(" ")) {
+				System.out.println(s);
+				if(!commonwords.contains(s)) {
+					keywords.add(s);
+				}
+			}
+			for() {
+				
+			}
+			addToDB(url, keywords);
+		}
+	}
+
+}

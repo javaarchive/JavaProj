@@ -1,0 +1,295 @@
+package editor;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.MenuBar;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Optional;
+
+import lang.English;
+import midi.*;
+
+import javax.imageio.ImageIO;
+import javax.swing.JFileChooser;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JScrollPane;
+import javax.swing.UIManager;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
+import com.sun.glass.ui.Cursor;
+
+
+public class BurstMidiEditor extends English implements ActionListener,DrawInterface,KeyListener{
+	// UTIL methods
+
+	private String getFileExtension(File file) {
+	    String name = file.getName();
+	    int lastIndexOf = name.lastIndexOf(".");
+	    if (lastIndexOf == -1) {
+	        return ""; // empty extension
+	    }
+	    return name.substring(lastIndexOf + 1);
+	}
+	// Variables
+	Gui gui;
+	DrawBoard screen;
+	String titlebar;
+	JMenuBar mb;
+	JMenu fileMenu;
+	JMenu renderMenu;
+	JMenuItem openItem;
+	JMenuItem saveItem;
+	JMenuItem saveImageItem;
+	MidiData midiData;
+	MidiPlayer mp;
+	Note[][] notes;
+	Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+	boolean screenMode = true;
+	public void prepareMidiSystem() throws MidiFailureException{
+		midiData = new MidiData();
+		midiData.loadMidi();
+		midiData.clean();
+		notes = new Note[0][0];
+	}
+	
+	public BurstMidiEditor() {
+		super();
+		this.titlebar = this.MIDI_EDITOR_NAME+" v"+this.version;
+		this.init();
+	}
+	public BurstMidiEditor(String name) {
+		super();
+		this.titlebar = name;
+		this.init();
+	}
+	public void init() {
+		try {
+		prepareMidiSystem();
+		}catch(MidiFailureException mfe) {
+			// TODO handleIt
+		}
+		setupGui();
+		showGui();
+	}
+	public void setupGui() {
+		try {
+	        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+	    }catch(Exception ex) {
+	        ex.printStackTrace();
+	    }
+		gui = new Gui();
+		gui.setTitle(this.titlebar);
+		gui.setSize(800, 600);
+		moveToCorner();
+		addMenus();
+		if(this.LARGE_MODE) {
+			for(Component c:gui.getComponents()) {
+				c.setSize(c.getWidth() * 2, c.getHeight() * 2);
+			}
+		}
+		screen = new DrawBoard();
+		screen.setSize(gui.getSize());
+		gui.add(screen);
+		gui.setAutoRequestFocus(true);
+		screen.setBackground(BACKGROUND_COLOR);
+		screen.setDrawer(this);
+		screen.setVisible(true);
+		scrollFrame = new JScrollPane(screen);
+		screen.setAutoscrolls(true);
+		gui.add(scrollFrame);
+		scrollFrame.setPreferredSize(new Dimension( 600,400));
+		scrollFrame.setVisible(true);
+		gui.addKeyListener(this);
+	}
+	
+	public void addMenus() {
+		mb = new JMenuBar();
+		fileMenu = new JMenu("File");
+		fileMenu.setMnemonic(KeyEvent.VK_F); // Key Binds
+		mb.add(fileMenu);
+		gui.setJMenuBar(mb);
+		mb.setVisible(true);
+		if(this.LARGE_MODE) {
+		mb.setPreferredSize(new Dimension(200, 50)); // Laptop Fix
+		}
+		addOpenItem();
+		// TODO add save item
+		renderMenu = new JMenu("Render");
+		renderMenu.setMnemonic(KeyEvent.VK_R); // Key Binds
+		mb.add(renderMenu);
+		addSaveImage();
+	}
+	JFileChooser fc;
+	private JScrollPane scrollFrame;
+	int trackInto =  25;
+	public void addOpenItem() {
+		openItem = new JMenuItem(OPEN_ITEM,KeyEvent.VK_O);
+		openItem.addActionListener(this);
+		fileMenu.add(openItem);
+		fc = new JFileChooser();
+		if(this.LARGE_MODE) {
+			for(Component c:fc.getComponents()) {
+				c.setSize(c.getWidth() * 2, c.getHeight() * 2);
+			}
+		}
+	}
+	public void addSaveImage() {
+		saveImageItem = new JMenuItem(RENDER_IMAGE,KeyEvent.VK_I);
+		saveImageItem.addActionListener(this);
+		renderMenu.add(saveImageItem);
+	}
+	public void showGui() {
+		
+		gui.setVisible(true);
+		
+	}
+	public void moveToCorner() {
+		gui.setBounds(0, 0, gui.getWidth(), gui.getHeight());
+	}
+	/*Action Listening*/
+	public void actionPerformed(ActionEvent e) {
+        if(e.getSource().equals(openItem)) {
+        	fc.setFileSelectionMode(fc.FILES_ONLY);
+        	//fc.setSize(900, 900);
+        	fc.setFileFilter(null);
+        	fc.setAcceptAllFileFilterUsed(true);
+        	int returnVal = fc.showOpenDialog(openItem);
+        	if (returnVal == JFileChooser.APPROVE_OPTION) {
+                File file = fc.getSelectedFile();
+                //This is where a real application would open the file.
+                System.out.println(file.getAbsolutePath());
+                try{
+                	midiData.setFile(file);
+                	notes = midiData.genmidi();
+                	screen.setSize((notes.length+1)*NOTE_WIDTH, screen.getHeight());
+                	System.out.println(screen.getSize());
+                }catch(Exception ex) {
+                	// Log Error TODO
+                }
+            } else {
+            	System.out.println("Cancelled");
+                
+            }
+        	
+        }else if(e.getSource().equals(saveImageItem)) {
+        	fc.setFileFilter(new FileNameExtensionFilter(
+        			    "Image File", ImageIO.getReaderFileSuffixes()));
+        	System.out.println("Support filetypes to save "+Arrays.toString(ImageIO.getWriterFileSuffixes()));
+        	int userSelection = fc.showSaveDialog(gui); 
+        	if (userSelection == JFileChooser.APPROVE_OPTION) {
+        		screen.setSize(screenSize); // Fixes Bug
+        		System.out.println("Creating Image in memory");
+	        	BufferedImage image = new BufferedImage(screen.getWidth(),screen.getHeight(),BufferedImage.TYPE_INT_RGB);
+	        	screenMode = false;
+	        	this.draw(image.getGraphics());
+	        	screenMode = true;
+	        	//image.setData(screen);
+	        	try {
+	        		System.out.println("Saving Image");
+					ImageIO.write(image,getFileExtension(fc.getSelectedFile()), fc.getSelectedFile());
+					System.out.println("Saved as " + fc.getSelectedFile().getAbsolutePath()+" extension "+getFileExtension(fc.getSelectedFile()));
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+        	}else {
+        		System.out.println("Rejected! ");
+        		return;
+        	}
+        }
+    }
+	@Override
+	public Graphics draw(Graphics g) {
+		g.setColor(BACKGROUND_COLOR);
+		g.drawRect(0, 0, screen.getWidth(), screen.getHeight());
+		for(int i = 0; i < midiData.pianoNotes; i ++) {
+			g.setColor(KEY_LETTER_BG);
+			g.fillRect(0, i * NOTE_HEIGHT, NOTE_WIDTH, NOTE_HEIGHT);
+			g.setColor(KEY_LETTER_OUTLINE);
+			g.drawRect(0, i * NOTE_HEIGHT, NOTE_WIDTH, NOTE_HEIGHT);
+			g.drawString(mp.NOTE_MOD_STRINGS[i % 12], KEY_TEXT_OFFSET, (i+1) * NOTE_HEIGHT);
+			//System.out.println("Draw");
+		}
+		
+		//int len = Integer.min(notes.length, trackInto);
+		//int len2 = Integer.min(notes.length, 40);
+		int len = trackInto;
+		int len2 = notes.length;
+		if(screenMode) {
+			System.err.println("Detected Screen");
+			len2 = Integer.min(trackInto + (int) Math.ceil(screenSize.width/NOTE_WIDTH),len2);
+		}
+		g.setColor(NOTE_BG);
+		g.fillRect(-NOTE_WIDTH, 0, NOTE_WIDTH, NOTE_HEIGHT);
+		g.setColor(NOTE_OUTLINE);
+		g.drawRect(len*NOTE_WIDTH, 0, NOTE_WIDTH, NOTE_HEIGHT);
+		for(int i = 0; i < midiData.pianoNotes; i ++) {
+//			j < notes.length
+			int k = 0;
+			g.setColor(NOTE_BG);
+			for(int j = len; j < len2 &&  -1<j; j ++) {
+				
+				System.out.println("Evt: "+j+" "+i+" "+k);
+				if(notes[j][i] == null) {
+					continue;
+				}
+				//System.out.println(notes[j][i].tone);
+				/*
+				g.setColor(NOTE_BG);
+				g.fillRect(j*NOTE_WIDTH, i * NOTE_HEIGHT, NOTE_WIDTH, NOTE_HEIGHT);
+				g.setColor(NOTE_OUTLINE);
+				g.drawRect(j*NOTE_WIDTH, i * NOTE_HEIGHT, NOTE_WIDTH, NOTE_HEIGHT);
+				*/
+				g.copyArea(len*NOTE_WIDTH, 0, NOTE_WIDTH, NOTE_HEIGHT,j*NOTE_WIDTH, i * NOTE_HEIGHT);
+				k++;
+			}
+		}
+		System.out.println(screen.getSize()+" track shift: "+trackInto);
+		return g;
+	}
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		BurstMidiEditor MidiEditor = new BurstMidiEditor();
+	}
+
+	@Override
+	public void keyPressed(KeyEvent e) {
+		if(e.getKeyCode() == KeyEvent.VK_RIGHT) {
+			trackInto ++;
+			screen.paint(screen.getGraphics());
+		}
+		else if(e.getKeyCode() == KeyEvent.VK_LEFT) {
+			trackInto --;
+			screen.paint(screen.getGraphics());
+		}else {
+			System.out.println("No Response");
+		}
+		//screen.paint(screen.getGraphics());
+		System.out.println("Pressed "+e.getKeyChar()+" code "+e.getKeyCode());
+		
+	}
+
+	@Override
+	public void keyReleased(KeyEvent e) {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public void keyTyped(KeyEvent e) {
+		// TODO Auto-generated method stub
+	}
+	
+
+}

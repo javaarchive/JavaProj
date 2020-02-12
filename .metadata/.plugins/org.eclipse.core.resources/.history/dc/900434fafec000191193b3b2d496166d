@@ -1,0 +1,29 @@
+
+public class Webpage {
+	public String url;
+	public String title;
+	public String desc;
+	public int freq;
+	public String keyword;
+	
+	public Webpage(String title, String url, String desc, String keyword, int freq) {
+		this.title = title;
+		this.url = url;
+		this.desc = desc;
+		this.keyword = keyword;
+		this.freq = freq;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof Webpage) {
+			
+		}else {
+			return false;
+		}
+	}
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+
+	}
+
+}

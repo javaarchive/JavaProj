@@ -1,0 +1,27 @@
+import java.io.*;
+import java.util.*;
+public class cmdSearchClient {
+	public static final String database = "C:\\Raymond\\searchDB\\keywords\\";
+	public static int firstQuery() {
+		
+	}
+	public static void main(String[] args) {
+		Scanner sc = new Scanner(System.in);
+		while(true) {
+			String query = sc.nextLine();
+			if(query.equals("quit") || query.equals("exit") || query.length() == 0) {
+				break;
+			}
+			query = NLP.removePunc(query);
+			String[] words = query.split(" ");
+			TextFile tf = new TextFile();
+			while() {
+				
+			}
+			for(int i = 1; i < words.length; i ++) {
+				
+			}
+		}
+	}
+
+}

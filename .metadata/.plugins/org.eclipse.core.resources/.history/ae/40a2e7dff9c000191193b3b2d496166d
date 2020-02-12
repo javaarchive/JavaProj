@@ -1,0 +1,99 @@
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
+import java.io.*;
+import java.util.*;
+public class WebScraper {
+	public static Map<String,Integer> freq(List<String> keywords){
+		Map<String,Integer> freq = new HashMap<>();
+		for(String keyword:keywords) {
+			if(freq.containsKey(keyword)) {
+				freq.put(keyword, freq.get(keyword)+1);
+			}else {
+				freq.put(keyword, 1);
+			}
+		}
+		return freq;
+	}
+	public final static String database = "C:\\Raymond\\searchDB\\keywords\\"; // No extra \\
+	public static void addToDB(String url,String title, String desc, List<String> keywords) {
+		Map<String,Integer> freq = freq(keywords);
+		for(String keyword:keywords) {
+			File f = new File(database + keyword + ".keyword");
+			if(!f.exists()) {
+				if(f.isDirectory()) {
+					continue;
+				}
+				WFile wf = new WFile(database + keyword + ".keyword");
+				wf.write(title);
+				wf.write(url);
+				wf.write(desc);
+				wf.write(freq.get(keyword));
+				wf.close();
+			}else {
+				List<Webpage> urls = new ArrayList<>();
+				TextFile tf = new TextFile(database + keyword + ".keyword");
+				while(true) {
+					String line = tf.readLine();
+					if(line == null) {
+						break;
+					}
+					Webpage wp = new Webpage(tf.readLine(), tf.readLine(), tf.readLine(), keyword, freq.get(keyword));
+					
+				}
+				urls.sort(new Comparator<Webpage>(){
+					public int compare(Webpage x,Webpage y) {
+						int m = Integer.compare(x.freq, y.freq);
+						if(m==0) {
+							return x.title.compareTo(y.title);
+						}
+						return m;
+					}
+				});
+				HashSet<String> hs = new HashSet<String>(urls);
+				hs.add(url);
+				WFile wf = new WFile(database + keyword + ".keyword");
+				for(String URL:hs) {
+					wf.write(title);
+					wf.write(URL);
+					wf.write(desc);
+				}
+				wf.close();
+			}
+		}
+	}
+	public static void main(String[] args) throws IOException {
+		// TODO Auto-generated method stub
+		TextFile f = new TextFile("toscrape.txt");
+		HashSet<String> commonwords = new HashSet<>((new TextFile("commonwords.txt").getLines()));
+		while(true) {
+			String url = f.readLine();
+			if(url == null) {
+				break;
+			}
+			try {
+			Document doc = Jsoup.connect(url).get();
+			List<String> keywords = new ArrayList<>();
+			String title = doc.title();
+			System.out.println(title);
+			for(String s: NLP.removePunc(title).split(" ")) {
+				System.out.println(s);
+				if(!commonwords.contains(s)) {
+					keywords.add(s);
+				}
+			}
+			
+			for(String s: NLP.removePunc(doc.body().text()).split(" ")) {
+				System.out.println(s);
+				if(!commonwords.contains(s)) {
+					keywords.add(s);
+				}
+			}
+			addToDB(url, title, doc.body().text().substring(0, 50), keywords);
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+	}
+
+}

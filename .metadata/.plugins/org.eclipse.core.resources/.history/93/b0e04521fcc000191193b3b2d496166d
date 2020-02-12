@@ -1,0 +1,10 @@
+import java.io.*;
+import java.util.*;
+public class cmdSearchClient {
+	public static final String database = "C:\\Raymond\\searchDB\\keywords\\";
+	public static void main(String[] args) {
+		Scanner sc = new Scanner(System.in);
+
+	}
+
+}

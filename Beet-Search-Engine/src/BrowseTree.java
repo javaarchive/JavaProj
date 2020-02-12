@@ -1,0 +1,143 @@
+import java.sql.Connection;
+import org.jgrapht.*;
+import org.jgrapht.demo.JGraphXAdapterDemo;
+import org.jgrapht.ext.JGraphXAdapter;
+import org.jgrapht.graph.*;
+import org.jgrapht.io.*;
+import org.jgrapht.traverse.*;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+
+import javax.swing.JFrame;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+
+import com.mxgraph.layout.mxCircleLayout;
+import com.mxgraph.swing.mxGraphComponent;
+public class BrowseTree {
+	public static Connection connect() {
+	    Connection conn = null;
+	    try {
+	        // db parameters
+	        String url = "jdbc:sqlite:C:/Raymond/webgraph.db";
+	        // create a connection to the database
+	        conn = DriverManager.getConnection(url);
+	        
+	        System.out.println("Connection to SQLite has been established.");
+	        
+	    } catch (SQLException e) {
+	        System.out.println(e.getMessage());
+	    } finally {
+	        try {
+	            if (conn != null) {
+	            	
+	                DatabaseMetaData meta = conn.getMetaData();
+	                System.out.println("The driver name is " + meta.getDriverName());
+	                System.out.println("A new database has been created.");
+	                
+	                return conn;
+	            }
+	        } catch (SQLException ex) {
+	            System.out.println(ex.getMessage());
+	        }
+	    }
+	    return conn;
+	}
+	public static boolean connCheckExists(Connection conn, String url) {
+	    try {
+	        String query = "SELECT (count(*) > 0) as found FROM webgraph WHERE url1 LIKE ?";
+	        PreparedStatement pst = conn.prepareStatement(query);
+	        pst.setString(1, url);
+	        //pst.setString(2, username);
+
+	        try (ResultSet rs = pst.executeQuery()) {
+	            // Only expecting a single result
+	            if (rs.next()) {
+	                boolean found = rs.getBoolean(1); // "found" column
+	               return found;
+	            }
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+	    return false;
+	}
+	public static void main(String[] args) throws SQLException{
+		// TODO Auto-generated method stub
+		Connection conn = connect();
+		try {
+			Statement stm = conn.createStatement();
+			String sql = "CREATE TABLE IF NOT EXISTS webgraph (\n"
+	                + "    url1 text NOT NULL,\n" // Used to have PRIMARY KEY
+	                + "    url2 text NOT NULL\n"
+	                + "    "
+	                + ");";
+			stm.execute(sql);
+			// 
+			System.out.println("DATABASE created");
+		}catch(Exception ex) {
+			System.out.println("Unable to proceed table creation "+ex.getLocalizedMessage());
+		}
+		Graph<String, DefaultEdge> g = new DefaultDirectedGraph<>(DefaultEdge.class);
+String sql = "SELECT url1, url2 FROM webgraph";
+        
+        try(
+             Statement stmt  = conn.createStatement();
+             ResultSet rs    = stmt.executeQuery(sql)){
+            
+            // loop through the result set
+            while (rs.next()) {
+                System.out.println(rs.getString("url1") +  "\t" + 
+                                   rs.getString("url2"));
+                String url1 = rs.getString("url1");
+                String url2 = rs.getString("url2");
+                if(!g.vertexSet().contains(url1)) {
+                	g.addVertex(url1);
+                }
+                if(!g.vertexSet().contains(url2)) {
+                	g.addVertex(url2);
+                }
+                g.addEdge(url1, url2);
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        System.out.println("Ready!");
+        JGraphXAdapter<String, DefaultEdge> jgxAdapter = new JGraphXAdapter<>(g);
+        mxCircleLayout layout = new mxCircleLayout(jgxAdapter);
+
+        // center the circle
+        int radius = 2;
+        int width = 5;
+        int height = 5;
+        layout.setX0((width / 2.0) - radius);
+        layout.setY0((height / 2.0) - radius);
+        layout.setRadius(radius);
+        layout.setMoveCircle(true);
+
+        layout.execute(jgxAdapter.getDefaultParent());
+        //JGraphXAdapterDemo applet = new JGraphXAdapterDemo();
+        //applet.init();
+
+        JFrame frame = new JFrame();
+        mxGraphComponent component = new mxGraphComponent(jgxAdapter);
+        frame.getContentPane().add(component);
+        frame.setTitle("JGraphT Adapter to JGraphX Demo");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.pack();
+        frame.setVisible(true);
+        layout.execute(frame);
+		conn.close();
+	}
+
+}
